@@ -50,7 +50,7 @@ jobs:
           --password-stdin
 
       - name: Tag Docker Image
-        run: docker tag my_hub:latest c00limoun/my_hub:latest
+        run: docker tag my_hub:latest otayalaa/my_hub:latest
 
       - name: Push Docker Image
-        run: docker push c00limoun/my_hub:latest
+        run: docker push otayalaa/my_hub:latest
