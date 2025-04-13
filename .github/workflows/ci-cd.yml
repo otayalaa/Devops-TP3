@@ -1,41 +1,56 @@
-name: Docker CI/CD Pipeline
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4  # Updated to v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - name: Build Docker Image
+        run: docker build -t my_hub:latest .
 
-      - name: Build Docker image
-        run: docker build -t my-docker-app .
+      - name: Save Docker Image as Tarball
+        run: docker save my_hub:latest -o my_hub.tar
 
-      - name: Run tests
-        run: |
-          docker run --rm my-docker-app python -m pytest  # Example test command
+      - name: Upload Docker Image Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: my_hub.tar
+
+      - name: Run Container and Execute Tests
+        run: docker run --rm my_hub:latest ./runtests.sh
 
   deploy:
+    runs-on: ubuntu-latest
     needs: build-and-test
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4  # Updated to v4
+
+      - name: Download Docker Image Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Load Docker Image
+        run: docker load -i my_hub.tar
 
       - name: Log in to Docker Hub
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-
-      - name: Tag and push Docker image
         run: |
-          docker tag my-docker-app ${{ secrets.DOCKER_USERNAME }}/my-docker-app:latest
-          docker push ${{ secrets.DOCKER_USERNAME }}/my-docker-app:latest
-          
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login \
+          -u "${{ secrets.DOCKER_USERNAME }}" \
+          --password-stdin
+
+      - name: Tag Docker Image
+        run: docker tag my_hub:latest c00limoun/my_hub:latest
+
+      - name: Push Docker Image
+        run: docker push c00limoun/my_hub:latest
