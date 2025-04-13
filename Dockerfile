@@ -1,10 +1,12 @@
-FROM python:3.9-slim
+# Use the official Nginx image as the base
+FROM nginx:alpine
 
-WORKDIR /app
+# Copy your custom HTML file to the Nginx web root
+COPY index.html /usr/share/nginx/html/index.html
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy the test script
+COPY runtests.sh /runtests.sh
+RUN chmod +x /runtests.sh
 
-COPY . .
-
-CMD ["python", "app.py"]
+# Expose port 80 to the outside world
+EXPOSE 80
